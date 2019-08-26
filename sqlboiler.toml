@@ -1,0 +1,7 @@
+[psql]
+dbname = "doctor_visit"
+user = "postgres"
+pass = ""
+host = "localhost"
+port = 5432
+sslmode = "disable"
