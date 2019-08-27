@@ -23,12 +23,13 @@ func NewRoot(db *db.DB) *Root {
 			graphql.ObjectConfig{
 				Name: "Query",
 				Fields: graphql.Fields{
-					"doctor":    doctorQuery(&resolver),
-					"doctors":   doctorsQuery(&resolver),
-					"illness":   illnessQuery(&resolver),
-					"illnesses": illnessesQuery(&resolver),
-					"user":      userQuery(&resolver),
-					"users":     usersQuery(&resolver),
+					"doctor":      doctorQuery(&resolver),
+					"doctors":     doctorsQuery(&resolver),
+					"illness":     illnessQuery(&resolver),
+					"illnesses":   illnessesQuery(&resolver),
+					"user":        userQuery(&resolver),
+					"users":       usersQuery(&resolver),
+					"userByEmail": userByEmailQuery(&resolver),
 				},
 			},
 		),
@@ -48,7 +49,7 @@ func doctorQuery(resolver *Resolver) *graphql.Field {
 			},
 		},
 		Description: "Get the list of all doctors",
-		Resolve:     resolver.DoctorResolver,
+		Resolve:     resolver.FindDoctor,
 	}
 }
 
@@ -82,7 +83,7 @@ func doctorsQuery(resolver *Resolver) *graphql.Field {
 			},
 		},
 		Description: "Get the list of all doctors. If limit is not set, the default limit will be used",
-		Resolve:     resolver.DoctorsResolver,
+		Resolve:     resolver.FindDoctors,
 	}
 }
 
@@ -95,7 +96,7 @@ func illnessQuery(resolver *Resolver) *graphql.Field {
 				Type: graphql.NewNonNull(graphql.Int),
 			},
 		},
-		Resolve: resolver.IllnessResolver,
+		Resolve: resolver.FindIllness,
 	}
 }
 
@@ -121,47 +122,51 @@ func illnessesQuery(resolver *Resolver) *graphql.Field {
 			},
 		},
 		Description: "Get the list of illnesses. If limit is not set, the default limit will be used",
-		Resolve:     resolver.IllnessesResolver,
+		Resolve:     resolver.FindIllnesses,
 	}
 }
 
 func userQuery(resolver *Resolver) *graphql.Field {
 	return &graphql.Field{
 		Name: "user",
-		Type: User,
+		Type: User(resolver),
 		Args: graphql.FieldConfigArgument{
 			"id": &graphql.ArgumentConfig{
 				Type: graphql.NewNonNull(graphql.Int),
 			},
 		},
-		Resolve: resolver.UserResolver,
+		Resolve: resolver.FindUser,
 	}
 }
 
 func usersQuery(resolver *Resolver) *graphql.Field {
 	return &graphql.Field{
 		Name: "users",
-		Type: graphql.NewList(User),
+		Type: graphql.NewList(User(resolver)),
 		Args: graphql.FieldConfigArgument{
 			"name": &graphql.ArgumentConfig{
 				Type: graphql.String,
 			},
-			"olderThan": &graphql.ArgumentConfig{
-				Type: graphql.Int,
-			},
-			"youngerThan": &graphql.ArgumentConfig{
-				Type: graphql.Int,
-			},
 			"email": &graphql.ArgumentConfig{
 				Type: graphql.String,
-			},
-			"age": &graphql.ArgumentConfig{
-				Type: graphql.Int,
 			},
 			"birthDate": &graphql.ArgumentConfig{
 				Type: graphql.DateTime,
 			},
 		},
-		Resolve: resolver.UsersResolver,
+		Resolve: resolver.FindUsers,
+	}
+}
+
+func userByEmailQuery(resolver *Resolver) *graphql.Field {
+	return &graphql.Field{
+		Name: "userByEmail",
+		Type: User(resolver),
+		Args: graphql.FieldConfigArgument{
+			"email": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+		},
+		Resolve: resolver.FindUserByEmail,
 	}
 }

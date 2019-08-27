@@ -78,29 +78,69 @@ var Illness = graphql.NewObject(
 )
 
 // User is a graphql object. It is used by graphql field to create an User type
-var User = graphql.NewObject(
-	graphql.ObjectConfig{
-		Name: "User",
-		Fields: graphql.Fields{
-			"user_id": &graphql.Field{
-				Type: graphql.Int,
-			},
-			"first_name": &graphql.Field{
-				Type: Varchar,
-			},
-			"last_name": &graphql.Field{
-				Type: Varchar,
-			},
-			"email": &graphql.Field{
-				Type: graphql.String,
-			},
-			"birth_date": &graphql.Field{
-				Type: graphql.DateTime,
-			},
-			"favorite_doctors": &graphql.Field{
-				Type: graphql.NewList(Doctor),
-				// Resolve: ,
+func User(resolver *Resolver) *graphql.Object {
+	return graphql.NewObject(
+		graphql.ObjectConfig{
+			Name: "User",
+			Fields: func() graphql.Fields {
+				return graphql.Fields{
+					"user_id": &graphql.Field{
+						Type: graphql.Int,
+					},
+					"first_name": &graphql.Field{
+						Type: Varchar,
+					},
+					"last_name": &graphql.Field{
+						Type: Varchar,
+					},
+					"email": &graphql.Field{
+						Type: graphql.String,
+					},
+					"birth_date": &graphql.Field{
+						Type: graphql.DateTime,
+					},
+					"favorite_doctors": &graphql.Field{
+						Type:    graphql.NewList(Doctor),
+						Resolve: resolver.FindFavoritesDoctors,
+					},
+					"illness_history": &graphql.Field{
+						Type: graphql.NewList(UserIllness(resolver)),
+					},
+				}
 			},
 		},
-	},
-)
+	)
+}
+
+func UserIllness(resolver *Resolver) *graphql.Object {
+	return graphql.NewObject(
+		graphql.ObjectConfig{
+			Name: "userIllness",
+			Fields: func() graphql.Fields {
+				return graphql.Fields{
+					"user_illness_id": &graphql.Field{
+						Type: graphql.Int,
+					},
+					"illness": &graphql.Field{
+						Type: Illness,
+					},
+					"from": &graphql.Field{
+						Type: graphql.DateTime,
+					},
+					"to": &graphql.Field{
+						Type: graphql.DateTime,
+					},
+					"notes": &graphql.Field{
+						Type: graphql.String,
+					},
+					"doctor": &graphql.Field{
+						Type: Doctor,
+					},
+					"user": &graphql.Field{
+						Type: User(resolver),
+					},
+				}
+			},
+		},
+	)
+}

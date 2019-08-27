@@ -6,6 +6,7 @@ import (
 
 	"github.com/graphql-go/graphql"
 	"github.com/klovack/doctor-visit/db"
+	"github.com/klovack/doctor-visit/models"
 )
 
 // Resolver struct holds a connection to the database,
@@ -14,8 +15,10 @@ type Resolver struct {
 	db *db.DB
 }
 
-// DoctorResolver resolves the doctor query and manage to respond with single `doctor`
-func (r *Resolver) DoctorResolver(p graphql.ResolveParams) (interface{}, error) {
+// ---------- DoctorResolver -------------
+
+// FindDoctor resolves the doctor query and manage to respond with single `doctor`
+func (r *Resolver) FindDoctor(p graphql.ResolveParams) (interface{}, error) {
 	id, idOK := p.Args["id"].(int)
 
 	if idOK {
@@ -30,8 +33,8 @@ func (r *Resolver) DoctorResolver(p graphql.ResolveParams) (interface{}, error) 
 	return nil, fmt.Errorf("Doctor ID has to be specified")
 }
 
-// DoctorsResolver resolves the doctors query and manage call to the `GetDoctorsByAttribute` and respond with list of `doctors`
-func (r *Resolver) DoctorsResolver(p graphql.ResolveParams) (interface{}, error) {
+// FindDoctors resolves the doctors query and manage call to the `GetDoctorsByAttribute` and respond with list of `doctors`
+func (r *Resolver) FindDoctors(p graphql.ResolveParams) (interface{}, error) {
 	name, nameOK := p.Args["name"].(string)
 	specialist, specialistOK := p.Args["specialist"].(string)
 	title, titleOK := p.Args["title"].(string)
@@ -63,8 +66,8 @@ func (r *Resolver) DoctorsResolver(p graphql.ResolveParams) (interface{}, error)
 	return doctors, nil
 }
 
-// IllnessResolver resolves the doctor illness and manage to respond with single `illness`.
-func (r *Resolver) IllnessResolver(p graphql.ResolveParams) (interface{}, error) {
+// FindIllness resolves the doctor illness and manage to respond with single `illness`.
+func (r *Resolver) FindIllness(p graphql.ResolveParams) (interface{}, error) {
 	id, idOK := p.Args["id"].(int)
 
 	if idOK {
@@ -74,8 +77,8 @@ func (r *Resolver) IllnessResolver(p graphql.ResolveParams) (interface{}, error)
 	return nil, fmt.Errorf("illness ID can't be empty")
 }
 
-// IllnessesResolver resolves the illnesses query and responds with list of `illnesses`
-func (r *Resolver) IllnessesResolver(p graphql.ResolveParams) (interface{}, error) {
+// FindIllnesses resolves the illnesses query and responds with list of `illnesses`
+func (r *Resolver) FindIllnesses(p graphql.ResolveParams) (interface{}, error) {
 	name, nameOK := p.Args["name"].(string)
 	risk, riskOK := p.Args["risk"].(int)
 
@@ -104,8 +107,8 @@ func (r *Resolver) IllnessesResolver(p graphql.ResolveParams) (interface{}, erro
 	return r.db.GetIllnesses(limit, offset, order)
 }
 
-// UserResolver resolves the user query and responds with a single `user`
-func (r *Resolver) UserResolver(p graphql.ResolveParams) (interface{}, error) {
+// FindUser resolves the user query and responds with a single `user`
+func (r *Resolver) FindUser(p graphql.ResolveParams) (interface{}, error) {
 	id, idOK := p.Args["id"].(int)
 
 	if idOK {
@@ -115,13 +118,21 @@ func (r *Resolver) UserResolver(p graphql.ResolveParams) (interface{}, error) {
 	return nil, fmt.Errorf("User ID can't be empty")
 }
 
-// UsersResolver resolves the users query and responds with a list `users`
-func (r *Resolver) UsersResolver(p graphql.ResolveParams) (interface{}, error) {
-	name, nameOK := p.Args["name"].(string)
-	older, olderOK := p.Args["older"].(int)
-	younger, youngerOK := p.Args["younger"].(int)
+// FindUserByEmail resolves the `userByEmail` query and responds with a single `user`
+func (r *Resolver) FindUserByEmail(p graphql.ResolveParams) (interface{}, error) {
 	email, emailOK := p.Args["email"].(string)
-	age, ageOK := p.Args["age"].(int)
+
+	if emailOK {
+		return r.db.GetUserByEmail(email)
+	}
+
+	return nil, fmt.Errorf("Email can't be empty")
+}
+
+// FindUsers resolves the users query and responds with a list `users`
+func (r *Resolver) FindUsers(p graphql.ResolveParams) (interface{}, error) {
+	name, nameOK := p.Args["name"].(string)
+	email, emailOK := p.Args["email"].(string)
 	birthDate, birthDateOK := p.Args["birthDate"].(time.Time)
 
 	// Here, the error is not relevant, if the limit or offset is not specified
@@ -134,13 +145,18 @@ func (r *Resolver) UsersResolver(p graphql.ResolveParams) (interface{}, error) {
 	order := EUsersOrderBy.Serialize(orderBy).(string)
 
 	if nameOK ||
-		olderOK ||
-		youngerOK ||
 		emailOK ||
-		ageOK ||
 		birthDateOK {
-		return r.db.GetUsersByAttribute(limit, offset, order, name, email, older, younger, age, birthDate)
+		return r.db.GetUsersByAttribute(limit, offset, order, name, email, birthDate)
 	}
 
 	return r.db.GetUsers(limit, offset, order)
+}
+
+// FindFavoritesDoctors returns all favorite_doctors for the given user.
+// This Resolver is not the best, but it works. It heavily needs better implementation to
+// optimize request to the database
+func (r *Resolver) FindFavoritesDoctors(p graphql.ResolveParams) (interface{}, error) {
+	user := p.Source.(*models.User)
+	return r.db.GetDoctorsForUser(user)
 }

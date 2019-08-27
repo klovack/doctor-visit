@@ -57,3 +57,24 @@ func (d *DB) GetDoctors(limit, offset int, order string) (models.DoctorSlice, er
 func (d *DB) GetDoctorByID(id int) (*models.Doctor, error) {
 	return models.Doctors(qm.Where("doctor_id=?", id)).One(d.ctx, d)
 }
+
+// GetDoctorsForUser returns the doctor slice on user's favorite
+func (d *DB) GetDoctorsForUser(user *models.User) (models.DoctorSlice, error) {
+	// SELECT *
+	// 		FROM doctor d
+	// INNER JOIN favorite_doctors ON f f.doctor_id = d.doctor_id
+	//		AND f.doctor_id = user.user_id
+	// var allFavDoctors []DoctorUser
+	return models.Doctors(
+		qm.InnerJoin(
+			fmt.Sprintf(
+				"%s ON %s.%s = %s.%s AND %s.%s = %d",
+				models.TableNames.FavoriteDoctors,                                // favorite_doctors
+				models.TableNames.FavoriteDoctors, models.DoctorColumns.DoctorID, // favorite_doctors.doctor_id
+				models.TableNames.Doctor, models.DoctorColumns.DoctorID, // doctor.doctor_id
+				models.TableNames.FavoriteDoctors, models.UserColumns.UserID, // favorite_doctors.user_id
+				user.UserID, // user.user_id
+			),
+		),
+	).All(d.ctx, d)
+}
